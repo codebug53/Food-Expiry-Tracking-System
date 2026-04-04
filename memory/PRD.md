@@ -6,7 +6,7 @@ Smart Expiry Detection Web App - Users scan or upload product label images to de
 ## Architecture
 - **Frontend**: React + Tailwind CSS + shadcn/ui (port 3000)
 - **Backend**: FastAPI (port 8001)
-- **OCR**: Gemini 3 Flash Vision via emergentintegrations
+- **OCR**: Gemini 3 Flash Vision
 - **Storage**: Browser localStorage for scan history
 - **Database**: MongoDB (template, not used for core features)
 

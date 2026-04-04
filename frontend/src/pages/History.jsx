@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { ArrowLeft, Scan } from 'lucide-react';
 
 export default function History() {
   const [history, setHistory] = useState([]);
@@ -21,7 +23,12 @@ export default function History() {
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-heading font-bold mb-1">Scan History</h2>
+          <div className="flex items-center gap-2 mb-2">
+            <Link to="/" className="text-muted-foreground hover:text-charcoal transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <h2 className="text-3xl font-heading font-bold">Scan History</h2>
+          </div>
           <p className="text-muted-foreground">Recent products you have checked.</p>
         </div>
         
@@ -37,9 +44,13 @@ export default function History() {
       </div>
 
       {history.length === 0 ? (
-        <div className="text-center py-20 border-2 border-dashed rounded-xl bg-card text-muted-foreground">
+        <div className="text-center py-20 border-2 border-dashed rounded-xl bg-card text-muted-foreground space-y-4">
           <p className="text-lg font-medium">No history found</p>
           <p className="text-sm">Scan a product and it will appear here.</p>
+          <Link to="/scan" className="inline-flex items-center gap-2 bg-charcoal text-white px-6 py-2 rounded-full hover:bg-darkGray transition-colors shadow-sm font-medium">
+            <Scan className="w-4 h-4" />
+            Start Your First Scan
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

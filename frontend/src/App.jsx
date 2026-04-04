@@ -16,11 +16,11 @@ function Navbar() {
           MODERN PANTRY<span className="text-golden font-sans leading-none">.</span>
         </Link>
         
-        {/* CENTER NAV */}
         <div className="hidden md:flex items-center gap-8">
-          <Link to="#features" className="text-sm font-medium text-charcoal/80 hover:text-charcoal transition-colors">Features</Link>
-          <Link to="#how-it-works" className="text-sm font-medium text-charcoal/80 hover:text-charcoal transition-colors">How it Works</Link>
-          <Link to="/scan" className="text-sm font-medium text-charcoal/80 hover:text-charcoal transition-colors">Demo App</Link>
+          <Link to="/#features" className="text-sm font-medium text-charcoal/80 hover:text-charcoal transition-colors">Features</Link>
+          <Link to="/#how-it-works" className="text-sm font-medium text-charcoal/80 hover:text-charcoal transition-colors">How it Works</Link>
+          <Link to="/history" className="text-sm font-medium text-charcoal/80 hover:text-charcoal transition-colors">History</Link>
+          <Link to="/scan" className="text-sm font-medium text-charcoal/80 hover:text-charcoal transition-colors font-bold ">Demo App</Link>
         </div>
 
         {/* RIGHT ACTIONS */}

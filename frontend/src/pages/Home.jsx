@@ -31,9 +31,12 @@ export default function Home() {
           </p>
           
           {/* CTA Group */}
-          <div className="w-full max-w-md flex justify-center mt-4">
-            <Link to="/scan" className="h-16 px-14 flex items-center justify-center bg-golden text-charcoal font-heading text-3xl uppercase rounded-lg hover:bg-[#ebd06b] hover:scale-105 transition-brutal shadow-xl border-2 border-charcoal">
+          <div className="w-full max-w-md flex flex-col items-center gap-4 mt-4">
+            <Link to="/scan" className="h-16 w-full px-14 flex items-center justify-center bg-golden text-charcoal font-heading text-3xl uppercase rounded-lg hover:bg-[#ebd06b] hover:scale-105 transition-brutal shadow-xl border-2 border-charcoal text-center">
               Try the Demo App
+            </Link>
+            <Link to="/history" className="text-charcoal/60 hover:text-charcoal font-medium underline underline-offset-4 decoration-golden decoration-2">
+              View Your Scan History
             </Link>
           </div>
           <p className="mt-6 text-sm font-medium text-charcoal/50">Free forever for individuals. No credit card required.</p>

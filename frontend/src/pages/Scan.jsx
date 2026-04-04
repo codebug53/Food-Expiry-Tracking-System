@@ -9,18 +9,37 @@ export default function Scan() {
   const [productName, setProductName] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [useEsp32, setUseEsp32] = useState(false);
+  const [esp32Url, setEsp32Url] = useState('http://172.27.117.66:81/stream');
   
   const webcamRef = useRef(null);
+  const esp32ImgRef = useRef(null);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   const handleCapture = useCallback(() => {
-    const imageSrc = webcamRef.current.getScreenshot();
-    if (imageSrc) {
-      setImage(imageSrc);
-      setIsCapturing(false);
+    if (useEsp32 && esp32ImgRef.current) {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = esp32ImgRef.current.naturalWidth || 640;
+        canvas.height = esp32ImgRef.current.naturalHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(esp32ImgRef.current, 0, 0);
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        setImage(dataUrl);
+        setIsCapturing(false);
+      } catch (err) {
+        toast.error('Could not capture from ESP32 stream (CORS issue).');
+        console.error(err);
+      }
+    } else if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+      if (imageSrc) {
+        setImage(imageSrc);
+        setIsCapturing(false);
+      }
     }
-  }, [webcamRef]);
+  }, [webcamRef, useEsp32]);
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
@@ -146,18 +165,45 @@ export default function Scan() {
               />
             </div>
           ) : isCapturing ? (
-            <div className="relative">
-              <Webcam
-                audio={false}
-                ref={webcamRef}
-                screenshotFormat="image/jpeg"
-                videoConstraints={{ facingMode: "environment" }}
-                className="w-full h-auto max-h-[400px] object-cover"
-                data-testid="camera-video"
-              />
+            <div className="relative bg-black rounded-lg overflow-hidden flex flex-col items-center">
+              {useEsp32 && (
+                <div className="absolute top-0 left-0 right-0 p-2 z-10 bg-gradient-to-b from-black/80 to-transparent">
+                  <input 
+                    type="text" 
+                    value={esp32Url} 
+                    onChange={e => setEsp32Url(e.target.value)} 
+                    className="w-full h-8 rounded border border-white/20 bg-black/50 text-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" 
+                    placeholder="ESP32 Stream URL" 
+                  />
+                </div>
+              )}
+              {useEsp32 ? (
+                <img 
+                  ref={esp32ImgRef} 
+                  src={esp32Url} 
+                  crossOrigin="anonymous" 
+                  className="w-full h-auto max-h-[400px] object-contain" 
+                  alt="ESP32 Stream" 
+                />
+              ) : (
+                <Webcam
+                  audio={false}
+                  ref={webcamRef}
+                  screenshotFormat="image/jpeg"
+                  videoConstraints={{ facingMode: "environment" }}
+                  className="w-full h-auto max-h-[400px] object-cover"
+                  data-testid="camera-video"
+                />
+              )}
+              <button 
+                onClick={() => setIsCapturing(false)}
+                className="absolute top-12 right-2 bg-black/50 text-white rounded-md px-3 py-1 text-sm font-medium hover:bg-black/70 transition-colors z-10"
+              >
+                Cancel
+              </button>
               <button 
                 onClick={handleCapture}
-                className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-black font-bold rounded-full h-14 w-14 flex items-center justify-center border-4 border-primary/20 hover:scale-105 transition-transform"
+                className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-black font-bold rounded-full h-14 w-14 flex items-center justify-center border-4 border-primary/20 hover:scale-105 transition-transform z-10"
               >
                 Snap
               </button>
@@ -176,12 +222,20 @@ export default function Scan() {
         </div>
 
         {!isCapturing && !image && (
-          <button 
-            onClick={() => setIsCapturing(true)}
-            className="w-full flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 transition-colors font-medium text-sm"
-          >
-            Open Camera
-          </button>
+          <div className="flex gap-2 w-full mt-4">
+            <button 
+              onClick={() => { setIsCapturing(true); setUseEsp32(false); }}
+              className="flex-1 flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 transition-colors font-medium text-sm"
+            >
+              Device Camera
+            </button>
+            <button 
+              onClick={() => { setIsCapturing(true); setUseEsp32(true); }}
+              className="flex-1 flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 transition-colors font-medium text-sm"
+            >
+              ESP32 Camera
+            </button>
+          </div>
         )}
       </div>
 
