@@ -9,7 +9,7 @@ const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 
 // Server endpoint (Change 192.168.1.XXX to your backend IP)
-const char* serverName = "http://192.168.1.XXX:8000/api/esp32-scan";
+const char* serverName = "http://10.170.104.63:8000/api/esp32-scan";
 
 // Hardware Pins
 #define BUTTON_PIN    13  // Push button connected to GND
@@ -139,14 +139,14 @@ void sendImageToServer(uint8_t *image_data, size_t image_length) {
 
   // We use a raw WiFiClient to stream the large JPEG chunks instead of the memory-heavy HTTPClient
   WiFiClient client;
-  if (!client.connect("192.168.1.XXX", 8000)) {
+  if (!client.connect("10.170.104.63", 8000)) {
     Serial.println("Connection failed!");
     beep(50, 4);
     return;
   }
 
   client.println("POST /api/esp32-scan HTTP/1.1");
-  client.println("Host: 192.168.1.XXX:8000");
+  client.println("Host: 10.170.104.63:8000");
   client.println("Content-Length: " + String(totalLen));
   client.println("Content-Type: multipart/form-data; boundary=" + boundary);
   client.println();

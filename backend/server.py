@@ -137,11 +137,7 @@ async def scan_product(request: ScanRequest):
     try:
         import requests
         
-        api_key = os.environ.get('GEMINI_API_KEY')
-        if not api_key:
-            return ScanResponse(success=False, error="API key not configured")
-
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        lm_studio_url = os.environ.get('LM_STUDIO_URL', 'http://localhost:1234/v1/chat/completions')
         
         system_instruction = """You are an expert at reading product labels and extracting dates from images.
 Analyze the image and extract ALL dates visible on the product label.
@@ -159,35 +155,39 @@ Rules:
 - If no dates are found at all, respond exactly with: NO_DATES_FOUND"""
 
         payload = {
-            "system_instruction": {
-                "parts": [{"text": system_instruction}]
-            },
-            "contents": [
+            "model": "local-model",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_instruction
+                },
                 {
                     "role": "user",
-                    "parts": [
-                        {"text": "Analyze this product label. Extract all dates, especially expiry/best-before dates."},
+                    "content": [
+                        {"type": "text", "text": "Analyze this product label. Extract all dates, especially expiry/best-before dates."},
                         {
-                            "inline_data": {
-                                "mime_type": request.mime_type,
-                                "data": request.image_base64
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{request.mime_type};base64,{request.image_base64}"
                             }
                         }
                     ]
                 }
-            ]
+            ],
+            "temperature": 0.1,
+            "max_tokens": 800,
         }
         
-        resp = requests.post(url, json=payload)
+        resp = requests.post(lm_studio_url, json=payload, headers={"Content-Type": "application/json"})
         if resp.status_code != 200:
-            return ScanResponse(success=False, error=f"Gemini API Error: {resp.text}")
+            return ScanResponse(success=False, error=f"LM Studio API Error: {resp.text}")
             
         res_json = resp.json()
-        if "candidates" not in res_json or not res_json["candidates"]:
+        if "choices" not in res_json or not res_json["choices"]:
             return ScanResponse(success=False, error=f"Unexpected response: {res_json}")
             
-        response = res_json["candidates"][0]["content"]["parts"][0]["text"]
-        logger.info(f"Gemini response: {response[:500]}")
+        response = res_json["choices"][0]["message"]["content"]
+        logger.info(f"LM Studio response: {response[:500]}")
 
         if "NO_DATES_FOUND" in response:
             return ScanResponse(
@@ -262,11 +262,7 @@ async def esp32_scan(file: UploadFile = File(...)):
         image_bytes = await file.read()
         image_base64 = base64.b64encode(image_bytes).decode('utf-8')
         
-        api_key = os.environ.get('GEMINI_API_KEY')
-        if not api_key:
-            return "ERROR: API key missing"
-
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        lm_studio_url = os.environ.get('LM_STUDIO_URL', 'http://localhost:1234/v1/chat/completions')
         
         system_instruction = """You are an expert at reading product labels and extracting dates from images.
 Analyze the image and extract ALL dates visible on the product label.
@@ -285,34 +281,38 @@ Otherwise, respond SAFE.
 If you cannot read any dates, respond UNKNOWN.
 """
         payload = {
-            "system_instruction": {
-                "parts": [{"text": system_instruction}]
-            },
-            "contents": [
+            "model": "local-model",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_instruction
+                },
                 {
                     "role": "user",
-                    "parts": [
-                        {"text": "Analyze this product label and give the verdict."},
+                    "content": [
+                        {"type": "text", "text": "Analyze this product label and give the verdict."},
                         {
-                            "inline_data": {
-                                "mime_type": file.content_type or "image/jpeg",
-                                "data": image_base64
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{file.content_type or 'image/jpeg'};base64,{image_base64}"
                             }
                         }
                     ]
                 }
-            ]
+            ],
+            "temperature": 0.1,
+            "max_tokens": 100,
         }
         
-        resp = requests.post(url, json=payload)
+        resp = requests.post(lm_studio_url, json=payload, headers={"Content-Type": "application/json"})
         if resp.status_code != 200:
-            return f"ERROR: Gemini {resp.status_code}"
+            return f"ERROR: LM Studio {resp.status_code}"
             
         res_json = resp.json()
-        if "candidates" not in res_json or not res_json["candidates"]:
+        if "choices" not in res_json or not res_json["choices"]:
             return "ERROR: Invalid response"
             
-        response_text = res_json["candidates"][0]["content"]["parts"][0]["text"].strip().upper()
+        response_text = res_json["choices"][0]["message"]["content"].strip().upper()
         
         # Parse the strict response
         for valid in ["SAFE", "RISKY", "CONSUME SOON", "EXPIRED"]:
