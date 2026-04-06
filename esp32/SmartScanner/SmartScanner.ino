@@ -2,14 +2,21 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
+#include <WiFiClientSecure.h>
+
 // ===========================
 // CONFIGURATION
 // ===========================
 const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 
-// Server endpoint (Change 192.168.1.XXX to your backend IP)
-const char* serverName = "http://10.170.104.63:8000/api/esp32-scan";
+// Server Configuration
+// For local network: serverHost = "10.170.104.63", serverPort = 8000, useHTTPS = false
+// For Ngrok (Internet): serverHost = "YOUR_ID.ngrok-free.app", serverPort = 443, useHTTPS = true
+String serverHost = "10.170.104.63";
+int serverPort = 8000;
+String serverPath = "/api/esp32-scan";
+bool useHTTPS = false;
 
 // Hardware Pins
 #define BUTTON_PIN    13  // Push button connected to GND
@@ -137,30 +144,41 @@ void sendImageToServer(uint8_t *image_data, size_t image_length) {
   String tail = "\r\n--" + boundary + "--\r\n";
   size_t totalLen = head.length() + image_length + tail.length();
 
-  // We use a raw WiFiClient to stream the large JPEG chunks instead of the memory-heavy HTTPClient
-  WiFiClient client;
-  if (!client.connect("10.170.104.63", 8000)) {
+  // We use a raw WiFiClient to stream the large JPEG chunks
+  // If using ngrok, we dynamically use a Secure client (HTTPS)
+  WiFiClient* client;
+  WiFiClient regularClient;
+  WiFiClientSecure secureClient;
+
+  if (useHTTPS) {
+    secureClient.setInsecure(); // Skip certificate verification
+    client = &secureClient;
+  } else {
+    client = &regularClient;
+  }
+
+  if (!client->connect(serverHost.c_str(), serverPort)) {
     Serial.println("Connection failed!");
     beep(50, 4);
     return;
   }
 
-  client.println("POST /api/esp32-scan HTTP/1.1");
-  client.println("Host: 10.170.104.63:8000");
-  client.println("Content-Length: " + String(totalLen));
-  client.println("Content-Type: multipart/form-data; boundary=" + boundary);
-  client.println();
+  client->println("POST " + serverPath + " HTTP/1.1");
+  client->println("Host: " + serverHost);
+  client->println("Content-Length: " + String(totalLen));
+  client->println("Content-Type: multipart/form-data; boundary=" + boundary);
+  client->println();
   
-  client.print(head);
-  client.write(image_data, image_length);
-  client.print(tail);
+  client->print(head);
+  client->write(image_data, image_length);
+  client->print(tail);
 
   // Read Response
   String response = "";
   unsigned long timeout = millis();
-  while (client.connected() && millis() - timeout < 10000) {
-    if (client.available()) {
-      char c = client.read();
+  while (client->connected() && millis() - timeout < 10000) {
+    if (client->available()) {
+      char c = client->read();
       response += c;
     }
   }
